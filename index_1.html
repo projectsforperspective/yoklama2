@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Yoklama Sistemi</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        /* Navigation */
+        .nav { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
+        .nav-btn {
+            padding: 15px 30px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.2); }
+        .nav-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-color: transparent; }
+        
+        /* Panels */
+        .panel { display: none; }
+        .panel.active { display: block; }
+        
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+        .card h1, .card h2 { text-align: center; margin-bottom: 20px; }
+        .card h1 { font-size: 2rem; color: #667eea; }
+        
+        /* Form Elements */
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #a0a0a0; font-size: 14px; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        
+        /* Buttons */
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+        .btn-danger { background: #e74c3c; color: #fff; }
+        .btn-success { background: #27ae60; color: #fff; }
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+        
+        /* QR Display */
+        .qr-section { text-align: center; padding: 30px; }
+        .qr-box {
+            display: inline-block;
+            background: #fff;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
+            margin: 20px 0;
+        }
+        .qr-box canvas, .qr-box img { display: block !important; }
+        .timer { font-size: 4rem; font-weight: bold; color: #667eea; margin: 15px 0; }
+        .timer.warning { color: #f39c12; }
+        .timer.danger { color: #e74c3c; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .code-display {
+            font-size: 2.5rem;
+            letter-spacing: 8px;
+            color: #fff;
+            background: rgba(102, 126, 234, 0.3);
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-family: 'Courier New', monospace;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        .qr-placeholder {
+            width: 280px;
+            height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* Status */
+        .status-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+        .status-box.waiting { background: rgba(243, 156, 18, 0.2); border: 1px solid #f39c12; }
+        .status-box.success { background: rgba(39, 174, 96, 0.2); border: 1px solid #27ae60; }
+        .status-box.error { background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; }
+        .status-icon { font-size: 28px; }
+        
+        /* Table */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        th { background: rgba(102, 126, 234, 0.2); font-weight: 600; }
+        tr:hover { background: rgba(255,255,255,0.05); }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: rgba(39, 174, 96, 0.3); color: #2ecc71; }
+        .badge-danger { background: rgba(231, 76, 60, 0.3); color: #e74c3c; }
+        
+        /* Stats */
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat { background: rgba(255,255,255,0.08); padding: 20px; border-radius: 15px; text-align: center; }
+        .stat-value { font-size: 2.5rem; font-weight: bold; color: #667eea; }
+        .stat-label { color: #a0a0a0; font-size: 14px; margin-top: 5px; }
+        
+        /* Fullscreen */
+        .fullscreen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .fullscreen.active { display: flex; }
+        .fullscreen .qr-box { padding: 40px; }
+        .fullscreen .timer { font-size: 7rem; }
+        .fullscreen .code-display { font-size: 4rem; letter-spacing: 15px; }
+        .fullscreen .course-name { font-size: 2rem; color: #888; margin-top: 20px; }
+        .close-btn {
+            position: absolute;
+            top: 20px; right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        /* Result Screens */
+        .result-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+            text-align: center;
+        }
+        .result-screen.active { display: flex; }
+        .result-screen.success { background: rgba(39, 174, 96, 0.95); }
+        .result-screen.error { background: rgba(231, 76, 60, 0.95); }
+        .result-icon { font-size: 100px; margin-bottom: 20px; }
+        .result-title { font-size: 2rem; margin-bottom: 15px; }
+        .result-detail { font-size: 1.2rem; opacity: 0.9; line-height: 1.6; }
+        
+        /* Alert */
+        .alert {
+            position: fixed;
+            top: 20px; left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 12px;
+            z-index: 10001;
+            max-width: 90%;
+            text-align: center;
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        .alert.success { background: #27ae60; }
+        .alert.error { background: #e74c3c; }
+        .alert.warning { background: #f39c12; }
+        
+        /* Instructions */
+        .instructions {
+            background: rgba(102, 126, 234, 0.15);
+            border: 2px dashed rgba(102, 126, 234, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .instructions h3 { color: #667eea; margin-bottom: 15px; text-align: center; }
+        .instructions ol { padding-left: 20px; }
+        .instructions li { margin: 10px 0; color: #ccc; }
+        
+        /* Info box */
+        .info-box {
+            background: rgba(231, 76, 60, 0.15);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .info-box .icon { font-size: 24px; }
+        .info-box p { font-size: 14px; color: #f5b7b1; }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .card { padding: 20px; }
+            .timer { font-size: 3rem; }
+            .code-display { font-size: 1.8rem; letter-spacing: 5px; padding: 12px 20px; }
+            .fullscreen .timer { font-size: 5rem; }
+            .fullscreen .code-display { font-size: 2.5rem; }
+            th, td { padding: 10px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav" id="mainNav">
+            <button class="nav-btn active" data-panel="admin">🖥️ Yönetici</button>
+            <button class="nav-btn" data-panel="student">📱 Öğrenci</button>
+            <button class="nav-btn" data-panel="list">📋 Liste</button>
+        </nav>
+
+        <!-- Admin Panel -->
+        <div id="admin" class="panel active">
+            <div class="card">
+                <h1>🎓 QR Yoklama Sistemi</h1>
+                
+                <div class="info-box">
+                    <span class="icon">🔒</span>
+                    <div>
+                        <strong>Güvenlik:</strong>
+                        <p>QR kod her 60 saniyede yenilenir. Konum doğrulaması olmadan yoklama alınamaz.</p>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>📚 Ders Adı</label>
+                        <input type="text" id="courseName" value="Farmakoloji">
+                    </div>
+                    <div class="form-group">
+                        <label>📍 Konum</label>
+                        <select id="classroom">
+                            <option value="40.2234,28.8721">Amfi A - Ana Bina</option>
+                            <option value="40.2230,28.8725">Amfi B - Tıp Fakültesi</option>
+                            <option value="40.2228,28.8719">Sınıf 101</option>
+                            <option value="40.2232,28.8723">Farmakoloji Lab</option>
+                            <option value="custom">📍 Özel Konum</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>⏱️ Yenileme (sn)</label>
+                        <input type="number" id="refreshTime" value="60" min="30" max="120">
+                    </div>
+                    <div class="form-group">
+                        <label>📏 Tolerans (m)</label>
+                        <input type="number" id="tolerance" value="50" min="20" max="200">
+                    </div>
+                </div>
+
+                <div id="customLocationDiv" style="display:none;" class="form-row">
+                    <div class="form-group">
+                        <label>Enlem</label>
+                        <input type="text" id="customLat" placeholder="40.2234">
+                    </div>
+                    <div class="form-group">
+                        <label>Boylam</label>
+                        <input type="text" id="customLng" placeholder="28.8721">
+                    </div>
+                    <div class="form-group" style="display:flex; align-items:flex-end;">
+                        <button class="btn btn-primary" onclick="useMyLocation()">📍 Konumumu Kullan</button>
+                    </div>
+                </div>
+
+                <div class="qr-section">
+                    <div class="qr-box" id="qrContainer">
+                        <div class="qr-placeholder">Oturumu başlatın</div>
+                    </div>
+                    <div>
+                        <p style="color:#888;">Kalan süre:</p>
+                        <div class="timer" id="timerDisplay">--</div>
+                        <p style="color:#888; margin-top:15px;">Yedek Kod:</p>
+                        <div class="code-display" id="codeDisplay">------</div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="startSession()">▶️ Başlat</button>
+                    <button class="btn btn-danger" onclick="stopSession()">⏹️ Durdur</button>
+                    <button class="btn btn-success" onclick="openFullscreen()">🖥️ Tam Ekran</button>
+                    <button class="btn" style="background:#3498db;" onclick="downloadList()">📥 İndir</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Panel -->
+        <div id="student" class="panel">
+            <div class="card" style="max-width:500px; margin:0 auto;">
+                <h2>📱 Yoklama Al</h2>
+                
+                <div class="instructions">
+                    <h3>Nasıl Yapılır?</h3>
+                    <ol>
+                        <li>Tahtadaki QR kodu telefonunuzla okutun</li>
+                        <li>Açılan sayfada bilgilerinizi girin</li>
+                        <li>Konum izni verin</li>
+                        <li>"Yoklama Al" butonuna basın</li>
+                    </ol>
+                </div>
+
+                <div class="form-group">
+                    <label>👤 Ad Soyad</label>
+                    <input type="text" id="studentName" placeholder="Adınız Soyadınız">
+                </div>
+                
+                <div class="form-group">
+                    <label>🎓 Öğrenci No</label>
+                    <input type="text" id="studentNo" placeholder="Öğrenci numaranız">
+                </div>
+
+                <div class="status-box waiting" id="locationStatus">
+                    <span class="status-icon">📍</span>
+                    <div>
+                        <strong>Konum Durumu</strong>
+                        <p id="locationText">Konum alınıyor...</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>🔢 6 Haneli Kod (QR'dan otomatik gelir)</label>
+                    <input type="text" id="attendanceCode" placeholder="ABC123" maxlength="6" 
+                           style="text-transform:uppercase; text-align:center; font-size:24px; letter-spacing:8px;">
+                </div>
+
+                <button class="btn btn-primary" onclick="submitAttendance()" style="width:100%; padding:18px; font-size:18px;">
+                    ✅ Yoklama Al
+                </button>
+            </div>
+        </div>
+
+        <!-- Attendance List -->
+        <div id="list" class="panel">
+            <div class="card">
+                <h2>📋 Yoklama Listesi</h2>
+                
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="statTotal">0</div>
+                        <div class="stat-label">✅ Onaylı</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statRejected">0</div>
+                        <div class="stat-label">❌ Reddedilen</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Ad Soyad</th>
+                                <th>No</th>
+                                <th>Saat</th>
+                                <th>Mesafe</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Mode -->
+    <div class="fullscreen" id="fullscreenMode">
+        <button class="close-btn" onclick="closeFullscreen()">✕ Kapat (ESC)</button>
+        <div class="qr-box" id="qrFullscreen"></div>
+        <div class="timer" id="timerFullscreen">60</div>
+        <div class="course-name" id="courseFullscreen">Farmakoloji</div>
+        <p style="color:#666; margin-top:20px; font-size:1.2rem;">📷 QR kodu telefonunuzla okutun veya kodu girin:</p>
+        <div class="code-display" id="codeFullscreen">------</div>
+    </div>
+
+    <!-- Success Screen -->
+    <div class="result-screen success" id="successScreen">
+        <div class="result-icon">✅</div>
+        <div class="result-title">YOKLAMA ALINDI!</div>
+        <div class="result-detail" id="successDetail"></div>
+    </div>
+
+    <!-- Error Screen -->
+    <div class="result-screen error" id="errorScreen">
+        <div class="result-icon">❌</div>
+        <div class="result-title" id="errorTitle">HATA</div>
+        <div class="result-detail" id="errorDetail"></div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
+    <script>
+        // ===== STATE =====
+        const state = {
+            active: false,
+            code: '',
+            payload: null,
+            timer: null,
+            remaining: 60,
+            attendance: [],
+            devices: new Set(),
+            location: null
+        };
+
+        // ===== INIT =====
+        document.addEventListener('DOMContentLoaded', () => {
+            // Navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(btn.dataset.panel).classList.add('active');
+                    if (btn.dataset.panel === 'student') getLocation();
+                });
+            });
+
+            // Custom location toggle
+            document.getElementById('classroom').addEventListener('change', function() {
+                document.getElementById('customLocationDiv').style.display = 
+                    this.value === 'custom' ? 'grid' : 'none';
+            });
+
+            // Uppercase code input
+            document.getElementById('attendanceCode').addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+
+            // ESC key
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') {
+                    closeFullscreen();
+                    document.getElementById('successScreen').classList.remove('active');
+                    document.getElementById('errorScreen').classList.remove('active');
+                }
+            });
+
+            // Check URL params (QR redirect)
+            checkURLParams();
+        });
+
+        // ===== URL PARAMS (QR Redirect) =====
+        function checkURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('c');
+            const data = params.get('d');
+
+            if (code && data) {
+                // Hide nav, show student panel
+                document.getElementById('mainNav').style.display = 'none';
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                document.getElementById('student').classList.add('active');
+
+                // Fill code
+                document.getElementById('attendanceCode').value = code;
+
+                // Parse payload
+                try {
+                    state.payload = JSON.parse(atob(data));
+                } catch(e) {
+                    console.error('Invalid payload');
+                }
+
+                // Get location
+                getLocation();
+            }
+        }
+
+        // ===== QR CODE GENERATION =====
+        function generateCode() {
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const refreshTime = parseInt(document.getElementById('refreshTime').value) || 60;
+            const tolerance = parseInt(document.getElementById('tolerance').value) || 50;
+            
+            let lat, lng;
+            const classroom = document.getElementById('classroom').value;
+            if (classroom === 'custom') {
+                lat = parseFloat(document.getElementById('customLat').value) || 0;
+                lng = parseFloat(document.getElementById('customLng').value) || 0;
+            } else {
+                [lat, lng] = classroom.split(',').map(Number);
+            }
+
+            const payload = {
+                c: code,
+                t: Date.now(),
+                e: Date.now() + (refreshTime * 1000),
+                la: lat,
+                lo: lng,
+                to: tolerance
+            };
+
+            state.code = code;
+            state.payload = payload;
+
+            // Create URL
+            const baseUrl = window.location.href.split('?')[0];
+            const encodedData = btoa(JSON.stringify(payload));
+            const qrUrl = `${baseUrl}?c=${code}&d=${encodedData}`;
+
+            // Generate QR codes
+            generateQRImage('qrContainer', qrUrl);
+            generateQRImage('qrFullscreen', qrUrl);
+
+            // Update displays
+            document.getElementById('codeDisplay').textContent = code;
+            document.getElementById('codeFullscreen').textContent = code;
+        }
+
+        function generateQRImage(containerId, url) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            
+            QRCode.toCanvas(canvas, url, {
+                width: containerId === 'qrFullscreen' ? 350 : 280,
+                margin: 2,
+                color: { dark: '#1a1a2e', light: '#ffffff' }
+            }, function(error) {
+                if (error) {
+                    console.error('QR Error:', error);
+                    container.innerHTML = '<div class="qr-placeholder">QR oluşturulamadı</div>';
+                }
+            });
+        }
+
+        // ===== SESSION MANAGEMENT =====
+        function startSession() {
+            if (state.active) return;
+            
+            state.active = true;
+            state.attendance = [];
+            state.devices = new Set();
+            state.remaining = parseInt(document.getElementById('refreshTime').value) || 60;
+
+            generateCode();
+            updateTimer();
+
+            state.timer = setInterval(() => {
+                state.remaining--;
+                updateTimer();
+                if (state.remaining <= 0) {
+                    state.remaining = parseInt(document.getElementById('refreshTime').value) || 60;
+                    generateCode();
+                }
+            }, 1000);
+
+            document.getElementById('courseFullscreen').textContent = 
+                document.getElementById('courseName').value;
+
+            showAlert('Oturum başlatıldı!', 'success');
+        }
+
+        function stopSession() {
+            state.active = false;
+            if (state.timer) {
+                clearInterval(state.timer);
+                state.timer = null;
+            }
+            document.getElementById('qrContainer').innerHTML = '<div class="qr-placeholder">Oturum durduruldu</div>';
+            document.getElementById('timerDisplay').textContent = '--';
+            document.getElementById('codeDisplay').textContent = '------';
+            
+            const count = state.attendance.filter(a => a.status === 'ok').length;
+            showAlert(`Oturum durduruldu. ${count} öğrenci yoklama aldı.`, 'warning');
+        }
+
+        function updateTimer() {
+            const displays = ['timerDisplay', 'timerFullscreen'];
+            displays.forEach(id => {
+                const el = document.getElementById(id);
+                el.textContent = state.remaining;
+                el.className = 'timer';
+                if (state.remaining <= 10) el.classList.add('danger');
+                else if (state.remaining <= 20) el.classList.add('warning');
+            });
+        }
+
+        // ===== LOCATION =====
+        function getLocation() {
+            const statusEl = document.getElementById('locationStatus');
+            const textEl = document.getElementById('locationText');
+            
+            statusEl.className = 'status-box waiting';
+            textEl.textContent = 'Konum alınıyor...';
+
+            if (!navigator.geolocation) {
+                statusEl.className = 'status-box error';
+                textEl.textContent = 'Tarayıcı konum desteklemiyor!';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    state.location = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        acc: pos.coords.accuracy
+                    };
+                    statusEl.className = 'status-box success';
+                    textEl.textContent = `✓ Konum alındı (±${Math.round(pos.coords.accuracy)}m)`;
+                },
+                err => {
+                    statusEl.className = 'status-box error';
+                    textEl.textContent = err.code === 1 ? '⚠️ Konum izni gerekli!' : 'Konum alınamadı';
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        }
+
+        function useMyLocation() {
+            navigator.geolocation?.getCurrentPosition(
+                pos => {
+                    document.getElementById('customLat').value = pos.coords.latitude.toFixed(6);
+                    document.getElementById('customLng').value = pos.coords.longitude.toFixed(6);
+                    showAlert('Konum kaydedildi!', 'success');
+                },
+                () => showAlert('Konum alınamadı!', 'error'),
+                { enableHighAccuracy: true }
+            );
+        }
+
+        // ===== ATTENDANCE SUBMISSION =====
+        function submitAttendance() {
+            const name = document.getElementById('studentName').value.trim();
+            const no = document.getElementById('studentNo').value.trim();
+            const code = document.getElementById('attendanceCode').value.toUpperCase().trim();
+
+            // Validations
+            if (!name) { showAlert('Ad soyad girin!', 'error'); return; }
+            if (!no) { showAlert('Öğrenci no girin!', 'error'); return; }
+            if (code.length !== 6) { showAlert('6 haneli kodu girin!', 'error'); return; }
+            if (!state.location) { showAlert('Konum alınamadı!', 'error'); getLocation(); return; }
+
+            const payload = state.payload;
+            if (!payload) {
+                showError('Geçersiz Kod', 'QR kodu tekrar okutun veya doğru kodu girin.');
+                return;
+            }
+
+            // Check code match
+            if (code !== payload.c) {
+                showError('Kod Eşleşmiyor', 'Girdiğiniz kod güncel değil. Tahtadaki QR\'ı tekrar okutun.');
+                addRecord(name, no, 'fail', 999, 'Yanlış kod');
+                return;
+            }
+
+            // Check expiry
+            if (Date.now() > payload.e) {
+                showError('Süre Dolmuş', 'Bu kodun süresi dolmuş. Yeni QR kodu okutun.');
+                addRecord(name, no, 'fail', 999, 'Süre dolmuş');
+                return;
+            }
+
+            // Calculate distance
+            const dist = calcDistance(state.location.lat, state.location.lng, payload.la, payload.lo);
+
+            // Check device
+            const fp = getFingerprint();
+            if (state.devices.has(fp)) {
+                showError('Zaten Alındı', 'Bu cihazdan zaten yoklama alındı.');
+                return;
+            }
+
+            // Check distance
+            if (dist > payload.to) {
+                showError('Konum Hatası', 
+                    `Sınıfa mesafeniz: ${Math.round(dist)} metre\n` +
+                    `İzin verilen: ${payload.to} metre\n\n` +
+                    `Sınıfta olmanız gerekiyor!`);
+                addRecord(name, no, 'fail', Math.round(dist), 'Uzak konum');
+                return;
+            }
+
+            // Check accuracy
+            if (state.location.acc > 150) {
+                showError('Düşük GPS', 'GPS hassasiyeti çok düşük. Açık alanda tekrar deneyin.');
+                addRecord(name, no, 'fail', Math.round(dist), 'Düşük GPS');
+                return;
+            }
+
+            // SUCCESS
+            state.devices.add(fp);
+            addRecord(name, no, 'ok', Math.round(dist));
+            showSuccess(name, no, Math.round(dist));
+        }
+
+        function calcDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(Δφ/2)**2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function getFingerprint() {
+            const data = [navigator.userAgent, navigator.language, screen.width, screen.height].join('|');
+            let hash = 0;
+            for (let i = 0; i < data.length; i++) hash = ((hash << 5) - hash) + data.charCodeAt(i);
+            return Math.abs(hash).toString(36);
+        }
+
+        function addRecord(name, no, status, dist, note = '') {
+            state.attendance.push({
+                name, no, status, dist, note,
+                time: new Date().toLocaleTimeString('tr-TR')
+            });
+            updateTable();
+        }
+
+        function updateTable() {
+            const ok = state.attendance.filter(a => a.status === 'ok');
+            const fail = state.attendance.filter(a => a.status === 'fail');
+            
+            document.getElementById('statTotal').textContent = ok.length;
+            document.getElementById('statRejected').textContent = fail.length;
+
+            document.getElementById('attendanceTable').innerHTML = state.attendance.map((a, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${a.name}</td>
+                    <td>${a.no}</td>
+                    <td>${a.time}</td>
+                    <td>${a.dist}m</td>
+                    <td><span class="badge badge-${a.status === 'ok' ? 'success' : 'danger'}">
+                        ${a.status === 'ok' ? '✅ Onaylı' : '❌ ' + a.note}
+                    </span></td>
+                </tr>
+            `).join('');
+        }
+
+        // ===== UI HELPERS =====
+        function showSuccess(name, no, dist) {
+            document.getElementById('successDetail').innerHTML = 
+                `<strong>${name}</strong><br>${no}<br><br>📍 Mesafe: ${dist}m`;
+            document.getElementById('successScreen').classList.add('active');
+            setTimeout(() => document.getElementById('successScreen').classList.remove('active'), 4000);
+        }
+
+        function showError(title, detail) {
+            document.getElementById('errorTitle').textContent = title;
+            document.getElementById('errorDetail').textContent = detail;
+            document.getElementById('errorScreen').classList.add('active');
+            setTimeout(() => document.getElementById('errorScreen').classList.remove('active'), 5000);
+        }
+
+        function showAlert(msg, type) {
+            const el = document.createElement('div');
+            el.className = `alert ${type}`;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        function openFullscreen() {
+            document.getElementById('fullscreenMode').classList.add('active');
+            document.documentElement.requestFullscreen?.();
+        }
+
+        function closeFullscreen() {
+            document.getElementById('fullscreenMode').classList.remove('active');
+            document.exitFullscreen?.();
+        }
+
+        function downloadList() {
+            const ok = state.attendance.filter(a => a.status === 'ok');
+            if (!ok.length) { showAlert('İndirilecek kayıt yok!', 'warning'); return; }
+            
+            const course = document.getElementById('courseName').value;
+            const date = new Date().toLocaleDateString('tr-TR');
+            let csv = '\ufeff' + `${course} - ${date}\n\nNo,Ad Soyad,Öğrenci No,Saat,Mesafe\n`;
+            ok.forEach((a, i) => csv += `${i+1},"${a.name}",${a.no},${a.time},${a.dist}m\n`);
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
+            link.download = `yoklama_${date.replace(/\./g,'-')}.csv`;
+            link.click();
+            showAlert('Liste indirildi!', 'success');
+        }
+    </script>
+</body>
+</html>
