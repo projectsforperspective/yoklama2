@@ -63,14 +63,12 @@
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
         }
         .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
         .btn-danger { background: #e74c3c; color: #fff; }
         .btn-success { background: #27ae60; color: #fff; }
         .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
         
         .qr-section { text-align: center; padding: 30px; }
@@ -83,7 +81,6 @@
             margin: 20px 0;
         }
         #qrcode { min-width: 256px; min-height: 256px; }
-        #qrcode img { display: block; }
         
         .timer { font-size: 4rem; font-weight: bold; color: #667eea; margin: 15px 0; }
         .timer.warning { color: #f39c12; }
@@ -113,9 +110,7 @@
         .status-box.waiting { background: rgba(243, 156, 18, 0.2); border: 1px solid #f39c12; }
         .status-box.success { background: rgba(39, 174, 96, 0.2); border: 1px solid #27ae60; }
         .status-box.error { background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; }
-        .status-icon { font-size: 28px; }
         
-        .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
         th { background: rgba(102, 126, 234, 0.2); font-weight: 600; }
@@ -145,7 +140,6 @@
         .fullscreen #qrcodeFull { min-width: 350px; min-height: 350px; }
         .fullscreen .timer { font-size: 6rem; }
         .fullscreen .code-display { font-size: 3.5rem; letter-spacing: 12px; }
-        .fullscreen .course-name { font-size: 2rem; color: #888; margin-top: 20px; }
         .close-btn {
             position: absolute;
             top: 20px; right: 20px;
@@ -175,7 +169,7 @@
         .result-screen.error-screen { background: rgba(231, 76, 60, 0.97); }
         .result-icon { font-size: 100px; margin-bottom: 20px; }
         .result-title { font-size: 2rem; margin-bottom: 15px; }
-        .result-detail { font-size: 1.2rem; opacity: 0.9; line-height: 1.8; }
+        .result-detail { font-size: 1.2rem; opacity: 0.9; line-height: 1.8; white-space: pre-line; }
         
         .alert {
             position: fixed;
@@ -197,8 +191,8 @@
         .alert.warning { background: #f39c12; }
         
         .info-box {
-            background: rgba(231, 76, 60, 0.15);
-            border: 1px solid rgba(231, 76, 60, 0.5);
+            background: rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.5);
             border-radius: 12px;
             padding: 15px;
             margin: 15px 0;
@@ -206,8 +200,12 @@
             align-items: flex-start;
             gap: 12px;
         }
+        .info-box.warning {
+            background: rgba(231, 76, 60, 0.15);
+            border-color: rgba(231, 76, 60, 0.5);
+        }
         .info-box .icon { font-size: 24px; }
-        .info-box p { font-size: 14px; color: #f5b7b1; }
+        .info-box p { font-size: 14px; color: #ccc; }
 
         .student-header {
             text-align: center;
@@ -218,7 +216,39 @@
         }
         .student-header h2 { margin: 0; font-size: 1.8rem; }
         .student-header p { margin-top: 8px; opacity: 0.9; }
+
+        .firebase-status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .firebase-status.connected { background: rgba(39, 174, 96, 0.2); color: #2ecc71; }
+        .firebase-status.disconnected { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
         
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(39, 174, 96, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #2ecc71;
+        }
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: #2ecc71;
+            border-radius: 50%;
+            animation: livePulse 1.5s infinite;
+        }
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
         @media (max-width: 768px) {
             .container { padding: 10px; }
             .card { padding: 20px; }
@@ -232,7 +262,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- Navigation - Hidden for students -->
+        <!-- Navigation -->
         <nav class="nav" id="mainNav">
             <button class="nav-btn active" data-panel="admin">🖥️ Yönetici</button>
             <button class="nav-btn" data-panel="student">📱 Öğrenci</button>
@@ -244,11 +274,15 @@
             <div class="card">
                 <h1>🎓 QR Yoklama Sistemi</h1>
                 
+                <div id="firebaseStatus" class="firebase-status disconnected">
+                    ⏳ Firebase'e bağlanıyor...
+                </div>
+
                 <div class="info-box">
                     <span class="icon">🔒</span>
                     <div>
-                        <strong>Güvenlik:</strong>
-                        <p>QR kod her 60 saniyede yenilenir. Konum doğrulaması olmadan yoklama alınamaz.</p>
+                        <strong>Güvenlik + Canlı Senkronizasyon</strong>
+                        <p>Öğrenciler yoklama aldığında anında listenizde görünür. QR kod her 60 saniyede yenilenir.</p>
                     </div>
                 </div>
 
@@ -304,7 +338,7 @@
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-primary" onclick="startSession()">▶️ Başlat</button>
+                    <button class="btn btn-primary" onclick="startSession()" id="btnStart">▶️ Başlat</button>
                     <button class="btn btn-danger" onclick="stopSession()">⏹️ Durdur</button>
                     <button class="btn btn-success" onclick="openFullscreen()">🖥️ Tam Ekran</button>
                     <button class="btn" style="background:#3498db;" onclick="downloadList()">📥 İndir</button>
@@ -331,7 +365,7 @@
                 </div>
 
                 <div class="status-box waiting" id="locationStatus">
-                    <span class="status-icon">📍</span>
+                    <span style="font-size:28px;">📍</span>
                     <div>
                         <strong>Konum Durumu</strong>
                         <p id="locationText">Konum alınıyor...</p>
@@ -339,8 +373,9 @@
                 </div>
 
                 <input type="hidden" id="attendanceCode">
+                <input type="hidden" id="sessionId">
 
-                <button class="btn btn-primary" onclick="submitAttendance()" style="width:100%; padding:18px; font-size:18px; margin-top:10px;">
+                <button class="btn btn-primary" onclick="submitAttendance()" id="btnSubmit" style="width:100%; padding:18px; font-size:18px; margin-top:10px;">
                     ✅ Yoklama Al
                 </button>
                 
@@ -353,7 +388,13 @@
         <!-- Attendance List -->
         <div id="list" class="panel">
             <div class="card">
-                <h2>📋 Yoklama Listesi</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+                    <h2 style="margin:0;">📋 Yoklama Listesi</h2>
+                    <div class="live-indicator">
+                        <div class="live-dot"></div>
+                        Canlı Güncelleniyor
+                    </div>
+                </div>
                 
                 <div class="stats">
                     <div class="stat">
@@ -366,7 +407,7 @@
                     </div>
                 </div>
 
-                <div class="table-container">
+                <div style="overflow-x:auto;">
                     <table>
                         <thead>
                             <tr>
@@ -392,7 +433,7 @@
             <div id="qrcodeFull"></div>
         </div>
         <div class="timer" id="timerFullscreen">60</div>
-        <div class="course-name" id="courseFullscreen">Farmakoloji</div>
+        <div style="font-size:2rem; color:#888; margin-top:20px;" id="courseFullscreen">Farmakoloji</div>
         <p style="color:#666; margin-top:20px; font-size:1.2rem;">📷 QR kodu telefonunuzla okutun</p>
         <div class="code-display" id="codeFullscreen">------</div>
     </div>
@@ -411,29 +452,69 @@
         <div class="result-detail" id="errorDetail"></div>
     </div>
 
-    <!-- QRCode.js Library - Most reliable one -->
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- QRCode.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <script>
+        // ===== FIREBASE CONFIG =====
+        // Bu ücretsiz bir test veritabanı. Kendi Firebase projenizi oluşturmanız önerilir.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxLrj7MJjLqLmWztvGT-7-d4Q1LmYcfnU",
+            authDomain: "yoklama-test-app.firebaseapp.com",
+            databaseURL: "https://yoklama-test-app-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "yoklama-test-app",
+            storageBucket: "yoklama-test-app.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abc123"
+        };
+
+        // Initialize Firebase
+        let db;
+        let firebaseReady = false;
+        
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            firebaseReady = true;
+        } catch(e) {
+            console.error('Firebase init error:', e);
+        }
+
         // ===== STATE =====
         const state = {
             active: false,
             code: '',
+            sessionId: '',
             payload: null,
             timer: null,
             remaining: 60,
             attendance: [],
-            devices: new Set(),
-            location: null,
-            qrMain: null,
-            qrFull: null
+            location: null
         };
 
         // ===== INIT =====
         document.addEventListener('DOMContentLoaded', () => {
+            // Check Firebase connection
+            if (firebaseReady) {
+                db.ref('.info/connected').on('value', (snap) => {
+                    const statusEl = document.getElementById('firebaseStatus');
+                    if (snap.val() === true) {
+                        statusEl.className = 'firebase-status connected';
+                        statusEl.innerHTML = '✅ Firebase bağlantısı aktif - Canlı senkronizasyon çalışıyor';
+                    } else {
+                        statusEl.className = 'firebase-status disconnected';
+                        statusEl.innerHTML = '❌ Firebase bağlantısı yok - Çevrimdışı mod';
+                    }
+                });
+            }
+
             // Check URL params first (QR redirect)
             if (checkURLParams()) {
-                return; // Student mode, don't setup admin navigation
+                return;
             }
 
             // Navigation for admin
@@ -443,7 +524,6 @@
                     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
                     btn.classList.add('active');
                     document.getElementById(btn.dataset.panel).classList.add('active');
-                    if (btn.dataset.panel === 'student') getLocation();
                 });
             });
 
@@ -462,8 +542,8 @@
                 }
             });
 
-            // Initialize QR containers with placeholder
-            document.getElementById('qrcode').innerHTML = '<div style="width:256px;height:256px;display:flex;align-items:center;justify-content:center;color:#999;">Oturumu başlatın</div>';
+            // Initialize QR placeholder
+            document.getElementById('qrcode').innerHTML = '<div style="width:256px;height:256px;display:flex;align-items:center;justify-content:center;color:#999;font-size:14px;">Oturumu başlatın</div>';
         });
 
         // ===== URL PARAMS (QR Redirect) =====
@@ -471,30 +551,29 @@
             const params = new URLSearchParams(window.location.search);
             const code = params.get('c');
             const data = params.get('d');
+            const session = params.get('s');
 
-            if (code && data) {
-                // STUDENT MODE - Hide everything except student panel
+            if (code && data && session) {
+                // STUDENT MODE
                 document.getElementById('mainNav').style.display = 'none';
                 document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
                 document.getElementById('student').classList.add('active');
 
-                // Store code
                 document.getElementById('attendanceCode').value = code;
+                document.getElementById('sessionId').value = session;
 
-                // Parse payload
                 try {
                     state.payload = JSON.parse(atob(data));
                     state.code = code;
+                    state.sessionId = session;
                 } catch(e) {
                     console.error('Invalid payload:', e);
                 }
 
-                // Get location immediately
                 getLocation();
-                
-                return true; // Is student mode
+                return true;
             }
-            return false; // Is admin mode
+            return false;
         }
 
         // ===== QR CODE GENERATION =====
@@ -524,19 +603,16 @@
             state.code = code;
             state.payload = payload;
 
-            // Create URL - this is what goes in QR
+            // Create URL with session ID
             const baseUrl = window.location.href.split('?')[0];
             const encodedData = btoa(JSON.stringify(payload));
-            const qrUrl = `${baseUrl}?c=${code}&d=${encodedData}`;
+            const qrUrl = `${baseUrl}?c=${code}&d=${encodedData}&s=${state.sessionId}`;
 
-            console.log('QR URL:', qrUrl); // Debug
-
-            // Clear previous QR codes
+            // Clear and generate QR codes
             document.getElementById('qrcode').innerHTML = '';
             document.getElementById('qrcodeFull').innerHTML = '';
 
-            // Generate main QR
-            state.qrMain = new QRCode(document.getElementById('qrcode'), {
+            new QRCode(document.getElementById('qrcode'), {
                 text: qrUrl,
                 width: 256,
                 height: 256,
@@ -545,8 +621,7 @@
                 correctLevel: QRCode.CorrectLevel.L
             });
 
-            // Generate fullscreen QR
-            state.qrFull = new QRCode(document.getElementById('qrcodeFull'), {
+            new QRCode(document.getElementById('qrcodeFull'), {
                 text: qrUrl,
                 width: 350,
                 height: 350,
@@ -555,19 +630,56 @@
                 correctLevel: QRCode.CorrectLevel.L
             });
 
-            // Update code displays
+            // Update displays
             document.getElementById('codeDisplay').textContent = code;
             document.getElementById('codeFullscreen').textContent = code;
+
+            // Update Firebase with current code
+            if (firebaseReady && state.sessionId) {
+                db.ref(`sessions/${state.sessionId}/currentCode`).set({
+                    code: code,
+                    expires: payload.e,
+                    lat: lat,
+                    lng: lng,
+                    tolerance: tolerance
+                });
+            }
         }
 
         // ===== SESSION MANAGEMENT =====
         function startSession() {
             if (state.active) return;
             
+            // Generate unique session ID
+            state.sessionId = 'S' + Date.now().toString(36).toUpperCase();
             state.active = true;
             state.attendance = [];
-            state.devices = new Set();
             state.remaining = parseInt(document.getElementById('refreshTime').value) || 60;
+
+            const courseName = document.getElementById('courseName').value;
+
+            // Create session in Firebase
+            if (firebaseReady) {
+                db.ref(`sessions/${state.sessionId}`).set({
+                    course: courseName,
+                    startTime: Date.now(),
+                    active: true
+                });
+
+                // Listen for attendance updates
+                db.ref(`sessions/${state.sessionId}/attendance`).on('child_added', (snapshot) => {
+                    const record = snapshot.val();
+                    // Check if not already in local list
+                    const exists = state.attendance.some(a => a.no === record.no && a.time === record.time);
+                    if (!exists) {
+                        state.attendance.push(record);
+                        updateTable();
+                        if (record.status === 'ok') {
+                            showAlert(`${record.name} yoklama aldı!`, 'success');
+                        }
+                    }
+                });
+            }
 
             generateQR();
             updateTimer();
@@ -581,10 +693,8 @@
                 }
             }, 1000);
 
-            document.getElementById('courseFullscreen').textContent = 
-                document.getElementById('courseName').value;
-
-            showAlert('Oturum başlatıldı!', 'success');
+            document.getElementById('courseFullscreen').textContent = courseName;
+            showAlert(`Oturum başlatıldı! ID: ${state.sessionId}`, 'success');
         }
 
         function stopSession() {
@@ -592,6 +702,12 @@
             if (state.timer) {
                 clearInterval(state.timer);
                 state.timer = null;
+            }
+
+            // Update Firebase
+            if (firebaseReady && state.sessionId) {
+                db.ref(`sessions/${state.sessionId}/active`).set(false);
+                db.ref(`sessions/${state.sessionId}/attendance`).off();
             }
             
             document.getElementById('qrcode').innerHTML = '<div style="width:256px;height:256px;display:flex;align-items:center;justify-content:center;color:#999;">Oturum durduruldu</div>';
@@ -603,8 +719,7 @@
         }
 
         function updateTimer() {
-            const displays = ['timerDisplay', 'timerFullscreen'];
-            displays.forEach(id => {
+            ['timerDisplay', 'timerFullscreen'].forEach(id => {
                 const el = document.getElementById(id);
                 el.textContent = state.remaining;
                 el.className = 'timer';
@@ -635,15 +750,11 @@
                         acc: pos.coords.accuracy
                     };
                     statusEl.className = 'status-box success';
-                    textEl.textContent = `✓ Konum alındı (±${Math.round(pos.coords.accuracy)}m hassasiyet)`;
+                    textEl.textContent = `✓ Konum alındı (±${Math.round(pos.coords.accuracy)}m)`;
                 },
                 err => {
                     statusEl.className = 'status-box error';
-                    if (err.code === 1) {
-                        textEl.textContent = '⚠️ Konum izni reddedildi! İzin verin.';
-                    } else {
-                        textEl.textContent = 'Konum alınamadı. Tekrar deneyin.';
-                    }
+                    textEl.textContent = err.code === 1 ? '⚠️ Konum izni reddedildi!' : 'Konum alınamadı.';
                 },
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
@@ -665,14 +776,13 @@
         function submitAttendance() {
             const name = document.getElementById('studentName').value.trim();
             const no = document.getElementById('studentNo').value.trim();
-            const code = document.getElementById('attendanceCode').value || state.code;
+            const code = document.getElementById('attendanceCode').value;
+            const sessionId = document.getElementById('sessionId').value;
 
-            // Validations
             if (!name) { showAlert('Ad soyad girin!', 'error'); return; }
             if (!no) { showAlert('Öğrenci no girin!', 'error'); return; }
-            
             if (!state.location) { 
-                showAlert('Konum alınamadı! Lütfen konum izni verin.', 'error'); 
+                showAlert('Konum alınamadı!', 'error'); 
                 getLocation(); 
                 return; 
             }
@@ -683,84 +793,66 @@
                 return;
             }
 
-            // Check code match
             if (code !== payload.c) {
-                showError('Kod Eşleşmiyor', 'Bu QR kodun süresi dolmuş. Yeni QR okutun.');
-                addRecord(name, no, 'fail', 999, 'Yanlış kod');
+                showError('Kod Eşleşmiyor', 'QR kodun süresi dolmuş. Yeni QR okutun.');
+                saveAttendance(sessionId, name, no, 'fail', 999, 'Yanlış kod');
                 return;
             }
 
-            // Check expiry
             if (Date.now() > payload.e) {
-                showError('Süre Dolmuş', 'Bu QR kodun süresi dolmuş. Tahtadaki yeni QR\'ı okutun.');
-                addRecord(name, no, 'fail', 999, 'Süre dolmuş');
+                showError('Süre Dolmuş', 'QR kodun süresi dolmuş. Yeni QR okutun.');
+                saveAttendance(sessionId, name, no, 'fail', 999, 'Süre dolmuş');
                 return;
             }
 
-            // Calculate distance
             const dist = calcDistance(state.location.lat, state.location.lng, payload.la, payload.lo);
 
-            // Check device fingerprint
-            const fp = getFingerprint();
-            if (state.devices.has(fp)) {
-                showError('Zaten Alındı', 'Bu cihazdan zaten yoklama alındı.');
-                return;
-            }
-
-            // Check distance
             if (dist > payload.to) {
                 showError('Konum Doğrulanamadı', 
-                    `Sınıfa mesafeniz: ${Math.round(dist)} metre\n` +
-                    `İzin verilen maksimum: ${payload.to} metre\n\n` +
-                    `⚠️ Yoklama almak için sınıfta olmanız gerekiyor!`);
-                addRecord(name, no, 'fail', Math.round(dist), 'Uzak konum');
+                    `Sınıfa mesafeniz: ${Math.round(dist)} metre\nİzin verilen: ${payload.to} metre\n\n⚠️ Sınıfta olmanız gerekiyor!`);
+                saveAttendance(sessionId, name, no, 'fail', Math.round(dist), 'Uzak konum');
                 return;
             }
 
-            // Check GPS accuracy
             if (state.location.acc > 150) {
-                showError('Düşük GPS Hassasiyeti', 'GPS sinyali zayıf. Açık alanda veya pencere kenarında tekrar deneyin.');
-                addRecord(name, no, 'fail', Math.round(dist), 'Düşük GPS');
+                showError('Düşük GPS', 'GPS sinyali zayıf. Açık alanda tekrar deneyin.');
+                saveAttendance(sessionId, name, no, 'fail', Math.round(dist), 'Düşük GPS');
                 return;
             }
 
-            // SUCCESS!
-            state.devices.add(fp);
-            addRecord(name, no, 'ok', Math.round(dist));
+            // SUCCESS - Save to Firebase
+            saveAttendance(sessionId, name, no, 'ok', Math.round(dist), '');
             showSuccess(name, no, Math.round(dist));
+            
+            // Disable button to prevent double submission
+            document.getElementById('btnSubmit').disabled = true;
+            document.getElementById('btnSubmit').textContent = '✓ Yoklama Alındı';
+        }
+
+        function saveAttendance(sessionId, name, no, status, dist, note) {
+            const record = {
+                name,
+                no,
+                status,
+                dist,
+                note,
+                time: new Date().toLocaleTimeString('tr-TR'),
+                timestamp: Date.now()
+            };
+
+            if (firebaseReady && sessionId) {
+                db.ref(`sessions/${sessionId}/attendance`).push(record);
+            }
         }
 
         function calcDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // Earth radius in meters
+            const R = 6371e3;
             const φ1 = lat1 * Math.PI / 180;
             const φ2 = lat2 * Math.PI / 180;
             const Δφ = (lat2 - lat1) * Math.PI / 180;
             const Δλ = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(Δφ/2)**2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2)**2;
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        }
-
-        function getFingerprint() {
-            const data = [
-                navigator.userAgent, 
-                navigator.language, 
-                screen.width + 'x' + screen.height,
-                new Date().getTimezoneOffset()
-            ].join('|');
-            let hash = 0;
-            for (let i = 0; i < data.length; i++) {
-                hash = ((hash << 5) - hash) + data.charCodeAt(i);
-                hash = hash & hash;
-            }
-            return Math.abs(hash).toString(36);
-        }
-
-        function addRecord(name, no, status, dist, note = '') {
-            state.attendance.push({
-                name, no, status, dist, note,
-                time: new Date().toLocaleTimeString('tr-TR')
-            });
-            updateTable();
         }
 
         function updateTable() {
@@ -770,9 +862,11 @@
             document.getElementById('statTotal').textContent = ok.length;
             document.getElementById('statRejected').textContent = fail.length;
 
-            document.getElementById('attendanceTable').innerHTML = state.attendance.map((a, i) => `
+            document.getElementById('attendanceTable').innerHTML = state.attendance
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+                .map((a, i) => `
                 <tr>
-                    <td>${i + 1}</td>
+                    <td>${state.attendance.length - i}</td>
                     <td>${a.name}</td>
                     <td>${a.no}</td>
                     <td>${a.time}</td>
@@ -787,26 +881,20 @@
         // ===== UI HELPERS =====
         function showSuccess(name, no, dist) {
             document.getElementById('successDetail').innerHTML = 
-                `<strong>${name}</strong><br>${no}<br><br>📍 Sınıfa mesafe: ${dist} metre`;
+                `<strong>${name}</strong>\n${no}\n\n📍 Sınıfa mesafe: ${dist} metre`;
             document.getElementById('successScreen').classList.add('active');
-            setTimeout(() => {
-                document.getElementById('successScreen').classList.remove('active');
-            }, 5000);
+            setTimeout(() => document.getElementById('successScreen').classList.remove('active'), 5000);
         }
 
         function showError(title, detail) {
             document.getElementById('errorTitle').textContent = title;
             document.getElementById('errorDetail').textContent = detail;
             document.getElementById('errorScreen').classList.add('active');
-            setTimeout(() => {
-                document.getElementById('errorScreen').classList.remove('active');
-            }, 6000);
+            setTimeout(() => document.getElementById('errorScreen').classList.remove('active'), 6000);
         }
 
         function showAlert(msg, type) {
-            const existing = document.querySelector('.alert');
-            if (existing) existing.remove();
-            
+            document.querySelectorAll('.alert').forEach(a => a.remove());
             const el = document.createElement('div');
             el.className = `alert ${type}`;
             el.textContent = msg;
@@ -816,28 +904,21 @@
 
         function openFullscreen() {
             document.getElementById('fullscreenMode').classList.add('active');
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
-            }
+            document.documentElement.requestFullscreen?.();
         }
 
         function closeFullscreen() {
             document.getElementById('fullscreenMode').classList.remove('active');
-            if (document.exitFullscreen && document.fullscreenElement) {
-                document.exitFullscreen();
-            }
+            if (document.fullscreenElement) document.exitFullscreen?.();
         }
 
         function downloadList() {
             const ok = state.attendance.filter(a => a.status === 'ok');
-            if (!ok.length) { 
-                showAlert('İndirilecek kayıt yok!', 'warning'); 
-                return; 
-            }
+            if (!ok.length) { showAlert('İndirilecek kayıt yok!', 'warning'); return; }
             
             const course = document.getElementById('courseName').value;
             const date = new Date().toLocaleDateString('tr-TR');
-            let csv = '\ufeff' + `${course} - Yoklama Listesi - ${date}\n\nNo,Ad Soyad,Öğrenci No,Saat,Mesafe\n`;
+            let csv = '\ufeff' + `${course} - Yoklama - ${date}\n\nNo,Ad Soyad,Öğrenci No,Saat,Mesafe\n`;
             ok.forEach((a, i) => csv += `${i+1},"${a.name}",${a.no},${a.time},${a.dist}m\n`);
             
             const link = document.createElement('a');
