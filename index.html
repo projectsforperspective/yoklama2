@@ -227,6 +227,14 @@
             50% { opacity: 0.5; transform: scale(1.2); }
         }
 
+        .already-taken {
+            text-align: center;
+            padding: 40px;
+        }
+        .already-taken .icon { font-size: 80px; margin-bottom: 20px; }
+        .already-taken h2 { color: #2ecc71; margin-bottom: 15px; }
+        .already-taken p { color: #888; }
+
         @media (max-width: 768px) {
             .container { padding: 10px; }
             .card { padding: 20px; }
@@ -256,8 +264,8 @@
                 <div class="info-box">
                     <span class="icon">🔒</span>
                     <div>
-                        <strong>Canlı Senkronizasyon Aktif</strong>
-                        <p>Öğrenciler yoklama aldığında anında listenizde görünür.</p>
+                        <strong>Güvenlik Aktif</strong>
+                        <p>Her cihaz ve öğrenci numarası sadece 1 kez yoklama alabilir. Sayfa yenilense bile tekrar alamaz.</p>
                     </div>
                 </div>
 
@@ -322,39 +330,49 @@
         <!-- Student Panel -->
         <div id="student" class="panel">
             <div class="card" style="max-width:500px; margin:0 auto;">
-                <div class="student-header">
-                    <h2>📱 Yoklama Al</h2>
-                    <p>Bilgilerinizi girin ve konum izni verin</p>
-                </div>
-
-                <div class="form-group">
-                    <label>👤 Ad Soyad</label>
-                    <input type="text" id="studentName" placeholder="Adınız Soyadınız">
-                </div>
-                
-                <div class="form-group">
-                    <label>🎓 Öğrenci No</label>
-                    <input type="text" id="studentNo" placeholder="Öğrenci numaranız">
-                </div>
-
-                <div class="status-box waiting" id="locationStatus">
-                    <span style="font-size:28px;">📍</span>
-                    <div>
-                        <strong>Konum Durumu</strong>
-                        <p id="locationText">Konum alınıyor...</p>
+                <!-- Normal form - will be hidden if already taken -->
+                <div id="studentForm">
+                    <div class="student-header">
+                        <h2>📱 Yoklama Al</h2>
+                        <p>Bilgilerinizi girin ve konum izni verin</p>
                     </div>
+
+                    <div class="form-group">
+                        <label>👤 Ad Soyad</label>
+                        <input type="text" id="studentName" placeholder="Adınız Soyadınız">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🎓 Öğrenci No</label>
+                        <input type="text" id="studentNo" placeholder="Öğrenci numaranız">
+                    </div>
+
+                    <div class="status-box waiting" id="locationStatus">
+                        <span style="font-size:28px;">📍</span>
+                        <div>
+                            <strong>Konum Durumu</strong>
+                            <p id="locationText">Konum alınıyor...</p>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="attendanceCode">
+                    <input type="hidden" id="sessionId">
+
+                    <button class="btn btn-primary" onclick="submitAttendance()" id="btnSubmit" style="width:100%; padding:18px; font-size:18px; margin-top:10px;">
+                        ✅ Yoklama Al
+                    </button>
+                    
+                    <p style="text-align:center; margin-top:20px; color:#888; font-size:14px;">
+                        Her cihazdan sadece 1 kez yoklama alınabilir
+                    </p>
                 </div>
 
-                <input type="hidden" id="attendanceCode">
-                <input type="hidden" id="sessionId">
-
-                <button class="btn btn-primary" onclick="submitAttendance()" id="btnSubmit" style="width:100%; padding:18px; font-size:18px; margin-top:10px;">
-                    ✅ Yoklama Al
-                </button>
-                
-                <p style="text-align:center; margin-top:20px; color:#888; font-size:14px;">
-                    Konum izni vermezseniz yoklama alamazsınız
-                </p>
+                <!-- Already taken message -->
+                <div id="alreadyTaken" class="already-taken" style="display:none;">
+                    <div class="icon">✅</div>
+                    <h2>Yoklamanız Zaten Alındı!</h2>
+                    <p id="alreadyTakenInfo"></p>
+                </div>
             </div>
         </div>
 
@@ -428,8 +446,7 @@
             projectId: "qr-yoklama-22588",
             storageBucket: "qr-yoklama-22588.firebasestorage.app",
             messagingSenderId: "980170112850",
-            appId: "1:980170112850:web:8f3ced8e1a1053ebd4c48b",
-            measurementId: "G-HLRTC6XJD7"
+            appId: "1:980170112850:web:8f3ced8e1a1053ebd4c48b"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -444,11 +461,25 @@
             timer: null,
             remaining: 60,
             attendance: [],
-            location: null
+            location: null,
+            deviceId: null
         };
+
+        // ===== DEVICE ID - Kalıcı ve Benzersiz =====
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('yoklama_device_id');
+            if (!deviceId) {
+                // Benzersiz ID oluştur
+                deviceId = 'D' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('yoklama_device_id', deviceId);
+            }
+            return deviceId;
+        }
 
         // ===== INIT =====
         document.addEventListener('DOMContentLoaded', () => {
+            state.deviceId = getDeviceId();
+
             // Firebase bağlantı kontrolü
             db.ref('.info/connected').on('value', snap => {
                 const el = document.getElementById('firebaseStatus');
@@ -503,17 +534,40 @@
 
                 document.getElementById('attendanceCode').value = code;
                 document.getElementById('sessionId').value = session;
+                state.sessionId = session;
 
                 try {
                     state.payload = JSON.parse(atob(data));
                     state.code = code;
-                    state.sessionId = session;
                 } catch(e) {}
 
+                // Önce bu oturumda zaten yoklama alınmış mı kontrol et
+                checkAlreadyTaken(session);
+                
                 getLocation();
                 return true;
             }
             return false;
+        }
+
+        // ===== ZATEN YOKLAMA ALINMIŞ MI KONTROL =====
+        function checkAlreadyTaken(sessionId) {
+            const deviceId = getDeviceId();
+            
+            // Cihaz ID'sine göre kontrol
+            db.ref(`sessions/${sessionId}/devices/${deviceId}`).once('value', snap => {
+                if (snap.exists()) {
+                    const data = snap.val();
+                    showAlreadyTaken(data.name, data.no, data.time);
+                }
+            });
+        }
+
+        function showAlreadyTaken(name, no, time) {
+            document.getElementById('studentForm').style.display = 'none';
+            document.getElementById('alreadyTaken').style.display = 'block';
+            document.getElementById('alreadyTakenInfo').innerHTML = 
+                `<strong>${name}</strong><br>No: ${no}<br>Saat: ${time}`;
         }
 
         // ===== QR =====
@@ -575,14 +629,12 @@
 
             const courseName = document.getElementById('courseName').value;
 
-            // Firebase'e oturum kaydet
             db.ref(`sessions/${state.sessionId}`).set({
                 course: courseName,
                 startTime: Date.now(),
                 active: true
             });
 
-            // Yoklama dinle
             db.ref(`sessions/${state.sessionId}/attendance`).on('child_added', snap => {
                 const record = snap.val();
                 if (!state.attendance.find(a => a.id === snap.key)) {
@@ -676,56 +728,104 @@
         }
 
         // ===== ATTENDANCE =====
-        function submitAttendance() {
+        async function submitAttendance() {
             const name = document.getElementById('studentName').value.trim();
             const no = document.getElementById('studentNo').value.trim();
             const code = document.getElementById('attendanceCode').value;
             const sessionId = document.getElementById('sessionId').value;
+            const deviceId = getDeviceId();
 
             if (!name) { showAlert('Ad soyad girin!', 'error'); return; }
             if (!no) { showAlert('Öğrenci no girin!', 'error'); return; }
             if (!state.location) { showAlert('Konum alınamadı!', 'error'); getLocation(); return; }
 
-            const payload = state.payload;
-            if (!payload) { showError('Geçersiz Bağlantı', 'QR kodu tekrar okutun.'); return; }
+            // Butonu devre dışı bırak
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.textContent = '⏳ Kontrol ediliyor...';
 
-            if (code !== payload.c) {
-                showError('Kod Eşleşmiyor', 'QR kodun süresi dolmuş.');
-                saveRecord(sessionId, name, no, 'fail', 999, 'Yanlış kod');
-                return;
+            try {
+                // 1. Cihaz daha önce yoklama almış mı?
+                const deviceCheck = await db.ref(`sessions/${sessionId}/devices/${deviceId}`).once('value');
+                if (deviceCheck.exists()) {
+                    const data = deviceCheck.val();
+                    showAlreadyTaken(data.name, data.no, data.time);
+                    return;
+                }
+
+                // 2. Öğrenci numarası daha önce kullanılmış mı?
+                const noCheck = await db.ref(`sessions/${sessionId}/studentNos/${no}`).once('value');
+                if (noCheck.exists()) {
+                    showError('Bu Numara Kullanıldı', `${no} numaralı öğrenci zaten yoklama almış.`);
+                    btn.disabled = false;
+                    btn.textContent = '✅ Yoklama Al';
+                    return;
+                }
+
+                const payload = state.payload;
+                if (!payload) { 
+                    showError('Geçersiz Bağlantı', 'QR kodu tekrar okutun.'); 
+                    btn.disabled = false;
+                    btn.textContent = '✅ Yoklama Al';
+                    return; 
+                }
+
+                if (code !== payload.c) {
+                    showError('Kod Eşleşmiyor', 'QR kodun süresi dolmuş.');
+                    saveRecord(sessionId, deviceId, name, no, 'fail', 999, 'Yanlış kod');
+                    btn.disabled = false;
+                    btn.textContent = '✅ Yoklama Al';
+                    return;
+                }
+
+                if (Date.now() > payload.e) {
+                    showError('Süre Dolmuş', 'Yeni QR kodu okutun.');
+                    saveRecord(sessionId, deviceId, name, no, 'fail', 999, 'Süre dolmuş');
+                    btn.disabled = false;
+                    btn.textContent = '✅ Yoklama Al';
+                    return;
+                }
+
+                const dist = calcDistance(state.location.lat, state.location.lng, payload.la, payload.lo);
+
+                if (dist > payload.to) {
+                    showError('Konum Hatası', `Mesafeniz: ${Math.round(dist)}m\nİzin: ${payload.to}m\n\nSınıfta olmalısınız!`);
+                    saveRecord(sessionId, deviceId, name, no, 'fail', Math.round(dist), 'Uzak');
+                    btn.disabled = false;
+                    btn.textContent = '✅ Yoklama Al';
+                    return;
+                }
+
+                if (state.location.acc > 150) {
+                    showError('Düşük GPS', 'Açık alanda tekrar deneyin.');
+                    saveRecord(sessionId, deviceId, name, no, 'fail', Math.round(dist), 'GPS zayıf');
+                    btn.disabled = false;
+                    btn.textContent = '✅ Yoklama Al';
+                    return;
+                }
+
+                // BAŞARILI - Kaydet
+                await saveRecord(sessionId, deviceId, name, no, 'ok', Math.round(dist), '');
+                
+                // Cihazı ve öğrenci nosunu kaydet (tekrar engellemek için)
+                const time = new Date().toLocaleTimeString('tr-TR');
+                await db.ref(`sessions/${sessionId}/devices/${deviceId}`).set({ name, no, time });
+                await db.ref(`sessions/${sessionId}/studentNos/${no}`).set({ name, deviceId, time });
+
+                showSuccess(name, no, Math.round(dist));
+                btn.textContent = '✓ Yoklama Alındı';
+                
+            } catch (error) {
+                console.error('Hata:', error);
+                showError('Hata', 'Bir sorun oluştu. Tekrar deneyin.');
+                btn.disabled = false;
+                btn.textContent = '✅ Yoklama Al';
             }
-
-            if (Date.now() > payload.e) {
-                showError('Süre Dolmuş', 'Yeni QR kodu okutun.');
-                saveRecord(sessionId, name, no, 'fail', 999, 'Süre dolmuş');
-                return;
-            }
-
-            const dist = calcDistance(state.location.lat, state.location.lng, payload.la, payload.lo);
-
-            if (dist > payload.to) {
-                showError('Konum Hatası', `Mesafeniz: ${Math.round(dist)}m\nİzin: ${payload.to}m\n\nSınıfta olmalısınız!`);
-                saveRecord(sessionId, name, no, 'fail', Math.round(dist), 'Uzak');
-                return;
-            }
-
-            if (state.location.acc > 150) {
-                showError('Düşük GPS', 'Açık alanda tekrar deneyin.');
-                saveRecord(sessionId, name, no, 'fail', Math.round(dist), 'GPS zayıf');
-                return;
-            }
-
-            // BAŞARILI
-            saveRecord(sessionId, name, no, 'ok', Math.round(dist), '');
-            showSuccess(name, no, Math.round(dist));
-            
-            document.getElementById('btnSubmit').disabled = true;
-            document.getElementById('btnSubmit').textContent = '✓ Alındı';
         }
 
-        function saveRecord(sessionId, name, no, status, dist, note) {
-            db.ref(`sessions/${sessionId}/attendance`).push({
-                name, no, status, dist, note,
+        function saveRecord(sessionId, deviceId, name, no, status, dist, note) {
+            return db.ref(`sessions/${sessionId}/attendance`).push({
+                name, no, status, dist, note, deviceId,
                 time: new Date().toLocaleTimeString('tr-TR'),
                 timestamp: Date.now()
             });
