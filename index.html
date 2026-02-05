@@ -8,126 +8,127 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: #2c3e50;
             min-height: 100vh;
-            color: #fff;
+            color: #ecf0f1;
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        
+
         .nav { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
         .nav-btn {
-            padding: 15px 30px;
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 16px;
+            padding: 12px 24px;
+            background: #34495e;
+            border: 1px solid #4a6278;
+            border-radius: 6px;
+            color: #ecf0f1;
+            font-size: 15px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: background 0.2s;
         }
-        .nav-btn:hover { background: rgba(255,255,255,0.2); }
-        .nav-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-color: transparent; }
-        
+        .nav-btn:hover { background: #3d566e; }
+        .nav-btn.active { background: #3498db; border-color: #3498db; }
+
         .panel { display: none; }
         .panel.active { display: block; }
-        
+
         .card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px;
-            padding: 30px;
-            backdrop-filter: blur(10px);
+            background: #34495e;
+            border-radius: 8px;
+            padding: 25px;
+            border: 1px solid #4a6278;
             margin-bottom: 20px;
         }
         .card h1, .card h2 { text-align: center; margin-bottom: 20px; }
-        .card h1 { font-size: 2rem; color: #667eea; }
-        
+        .card h1 { font-size: 1.8rem; color: #3498db; }
+
         .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #a0a0a0; font-size: 14px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #95a5a6; font-size: 14px; }
         .form-group input, .form-group select {
             width: 100%;
-            padding: 12px 15px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 10px;
-            color: #fff;
-            font-size: 16px;
+            padding: 10px 12px;
+            background: #2c3e50;
+            border: 1px solid #4a6278;
+            border-radius: 4px;
+            color: #ecf0f1;
+            font-size: 15px;
         }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
-        
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #3498db; }
+
         .btn {
-            padding: 15px 30px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 4px;
+            font-size: 15px;
             cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
+            transition: opacity 0.2s;
+            font-weight: 500;
         }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
-        .btn-danger { background: #e74c3c; color: #fff; }
+        .btn-primary { background: #3498db; color: #fff; }
+        .btn-danger { background: #c0392b; color: #fff; }
         .btn-success { background: #27ae60; color: #fff; }
-        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn:hover { opacity: 0.85; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
-        
-        .qr-section { text-align: center; padding: 30px; }
+
+        .qr-section { text-align: center; padding: 25px; }
         .qr-box {
             display: inline-block;
             background: #fff;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
-            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin: 15px 0;
         }
         #qrcode { min-width: 256px; min-height: 256px; }
-        
-        .timer { font-size: 4rem; font-weight: bold; color: #667eea; margin: 15px 0; }
+
+        .timer { font-size: 3.5rem; font-weight: bold; color: #3498db; margin: 15px 0; }
         .timer.warning { color: #f39c12; }
         .timer.danger { color: #e74c3c; animation: pulse 1s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        
+
         .code-display {
-            font-size: 2.5rem;
-            letter-spacing: 8px;
-            color: #fff;
-            background: rgba(102, 126, 234, 0.3);
-            padding: 15px 30px;
-            border-radius: 15px;
+            font-size: 2rem;
+            letter-spacing: 6px;
+            color: #ecf0f1;
+            background: #2c3e50;
+            padding: 12px 24px;
+            border-radius: 6px;
             font-family: 'Courier New', monospace;
             display: inline-block;
             margin-top: 15px;
+            border: 1px solid #4a6278;
         }
-        
+
         .status-box {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 15px 20px;
-            border-radius: 12px;
+            padding: 12px 16px;
+            border-radius: 6px;
             margin: 15px 0;
         }
-        .status-box.waiting { background: rgba(243, 156, 18, 0.2); border: 1px solid #f39c12; }
-        .status-box.success { background: rgba(39, 174, 96, 0.2); border: 1px solid #27ae60; }
-        .status-box.error { background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; }
-        
+        .status-box.waiting { background: rgba(243, 156, 18, 0.15); border: 1px solid #f39c12; }
+        .status-box.success { background: rgba(39, 174, 96, 0.15); border: 1px solid #27ae60; }
+        .status-box.error { background: rgba(192, 57, 43, 0.15); border: 1px solid #c0392b; }
+
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        th { background: rgba(102, 126, 234, 0.2); font-weight: 600; }
-        tr:hover { background: rgba(255,255,255,0.05); }
-        .badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .badge-success { background: rgba(39, 174, 96, 0.3); color: #2ecc71; }
-        .badge-danger { background: rgba(231, 76, 60, 0.3); color: #e74c3c; }
-        
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #4a6278; }
+        th { background: #2c3e50; font-weight: 600; color: #95a5a6; }
+        tr:hover { background: rgba(255,255,255,0.03); }
+        .badge { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+        .badge-success { background: rgba(39, 174, 96, 0.2); color: #2ecc71; }
+        .badge-danger { background: rgba(192, 57, 43, 0.2); color: #e74c3c; }
+
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat { background: rgba(255,255,255,0.08); padding: 20px; border-radius: 15px; text-align: center; }
-        .stat-value { font-size: 2.5rem; font-weight: bold; color: #667eea; }
-        .stat-label { color: #a0a0a0; font-size: 14px; margin-top: 5px; }
-        
+        .stat { background: #2c3e50; padding: 18px; border-radius: 6px; text-align: center; border: 1px solid #4a6278; }
+        .stat-value { font-size: 2.2rem; font-weight: bold; color: #3498db; }
+        .stat-label { color: #95a5a6; font-size: 13px; margin-top: 5px; }
+
         .fullscreen {
             position: fixed; top: 0; left: 0;
             width: 100vw; height: 100vh;
-            background: #000;
+            background: #1a252f;
             display: none;
             flex-direction: column;
             justify-content: center;
@@ -135,19 +136,20 @@
             z-index: 9999;
         }
         .fullscreen.active { display: flex; }
-        .fullscreen .qr-box { padding: 30px; }
+        .fullscreen .qr-box { padding: 25px; }
         .fullscreen #qrcodeFull { min-width: 350px; min-height: 350px; }
-        .fullscreen .timer { font-size: 6rem; }
-        .fullscreen .code-display { font-size: 3.5rem; letter-spacing: 12px; }
+        .fullscreen .timer { font-size: 5rem; }
+        .fullscreen .code-display { font-size: 3rem; letter-spacing: 10px; }
         .close-btn {
             position: absolute; top: 20px; right: 20px;
-            background: rgba(255,255,255,0.1);
-            border: none; color: #fff;
-            padding: 15px 25px;
-            border-radius: 10px;
-            cursor: pointer; font-size: 16px;
+            background: #34495e;
+            border: 1px solid #4a6278;
+            color: #ecf0f1;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer; font-size: 15px;
         }
-        
+
         .result-screen {
             position: fixed; top: 0; left: 0;
             width: 100vw; height: 100vh;
@@ -160,17 +162,17 @@
             text-align: center;
         }
         .result-screen.active { display: flex; }
-        .result-screen.success-screen { background: rgba(39, 174, 96, 0.97); }
-        .result-screen.error-screen { background: rgba(231, 76, 60, 0.97); }
-        .result-icon { font-size: 100px; margin-bottom: 20px; }
-        .result-title { font-size: 2rem; margin-bottom: 15px; }
-        .result-detail { font-size: 1.2rem; opacity: 0.9; line-height: 1.8; white-space: pre-line; }
-        
+        .result-screen.success-screen { background: rgba(39, 174, 96, 0.95); }
+        .result-screen.error-screen { background: rgba(192, 57, 43, 0.95); }
+        .result-icon { font-size: 80px; margin-bottom: 20px; }
+        .result-title { font-size: 1.8rem; margin-bottom: 15px; }
+        .result-detail { font-size: 1.1rem; opacity: 0.9; line-height: 1.8; white-space: pre-line; }
+
         .alert {
             position: fixed; top: 20px; left: 50%;
             transform: translateX(-50%);
-            padding: 15px 25px;
-            border-radius: 12px;
+            padding: 12px 20px;
+            border-radius: 4px;
             z-index: 10001;
             max-width: 90%;
             text-align: center;
@@ -181,68 +183,68 @@
             to { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
         .alert.success { background: #27ae60; }
-        .alert.error { background: #e74c3c; }
-        .alert.warning { background: #f39c12; }
-        
+        .alert.error { background: #c0392b; }
+        .alert.warning { background: #d35400; }
+
         .info-box {
-            background: rgba(102, 126, 234, 0.15);
-            border: 1px solid rgba(102, 126, 234, 0.5);
-            border-radius: 12px;
-            padding: 15px; margin: 15px 0;
-            display: flex; align-items: flex-start; gap: 12px;
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid rgba(52, 152, 219, 0.4);
+            border-radius: 6px;
+            padding: 12px; margin: 15px 0;
+            display: flex; align-items: flex-start; gap: 10px;
         }
-        .info-box .icon { font-size: 24px; }
-        .info-box p { font-size: 14px; color: #ccc; }
+        .info-box .icon { font-size: 20px; }
+        .info-box p { font-size: 13px; color: #bdc3c7; }
 
         .student-header {
             text-align: center;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px;
-            margin-bottom: 25px;
+            padding: 18px;
+            background: #3498db;
+            border-radius: 6px;
+            margin-bottom: 20px;
         }
-        .student-header h2 { margin: 0; font-size: 1.8rem; }
-        .student-header p { margin-top: 8px; opacity: 0.9; }
+        .student-header h2 { margin: 0; font-size: 1.5rem; }
+        .student-header p { margin-top: 6px; opacity: 0.9; font-size: 14px; }
 
         .firebase-status {
-            text-align: center; padding: 10px;
-            border-radius: 8px; margin-bottom: 15px; font-size: 14px;
+            text-align: center; padding: 8px;
+            border-radius: 4px; margin-bottom: 15px; font-size: 13px;
         }
-        .firebase-status.connected { background: rgba(39, 174, 96, 0.2); color: #2ecc71; }
-        .firebase-status.disconnected { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
-        
+        .firebase-status.connected { background: rgba(39, 174, 96, 0.15); color: #2ecc71; }
+        .firebase-status.disconnected { background: rgba(192, 57, 43, 0.15); color: #e74c3c; }
+
         .live-indicator {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(39, 174, 96, 0.2);
-            padding: 8px 15px; border-radius: 20px;
-            font-size: 14px; color: #2ecc71;
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(39, 174, 96, 0.15);
+            padding: 6px 12px; border-radius: 4px;
+            font-size: 13px; color: #2ecc71;
         }
         .live-dot {
-            width: 10px; height: 10px;
+            width: 8px; height: 8px;
             background: #2ecc71; border-radius: 50%;
-            animation: livePulse 1.5s infinite;
+            animation: livePulse 2s infinite;
         }
         @keyframes livePulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
         .already-taken {
             text-align: center;
-            padding: 40px;
+            padding: 35px;
         }
-        .already-taken .icon { font-size: 80px; margin-bottom: 20px; }
-        .already-taken h2 { color: #2ecc71; margin-bottom: 15px; }
-        .already-taken p { color: #888; }
+        .already-taken .icon { font-size: 60px; margin-bottom: 15px; }
+        .already-taken h2 { color: #2ecc71; margin-bottom: 12px; font-size: 1.4rem; }
+        .already-taken p { color: #95a5a6; }
 
         @media (max-width: 768px) {
             .container { padding: 10px; }
-            .card { padding: 20px; }
-            .timer { font-size: 3rem; }
-            .code-display { font-size: 1.8rem; letter-spacing: 5px; padding: 12px 20px; }
-            .fullscreen .timer { font-size: 4rem; }
-            .fullscreen .code-display { font-size: 2rem; letter-spacing: 8px; }
-            th, td { padding: 10px; font-size: 14px; }
+            .card { padding: 15px; }
+            .timer { font-size: 2.5rem; }
+            .code-display { font-size: 1.5rem; letter-spacing: 4px; padding: 10px 16px; }
+            .fullscreen .timer { font-size: 3.5rem; }
+            .fullscreen .code-display { font-size: 1.8rem; letter-spacing: 6px; }
+            th, td { padding: 8px; font-size: 13px; }
         }
     </style>
 </head>
@@ -381,7 +383,10 @@
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
                     <h2 style="margin:0;">📋 Yoklama Listesi</h2>
-                    <div class="live-indicator"><div class="live-dot"></div> Canlı</div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button class="btn btn-success" onclick="downloadExcel()" style="padding:8px 16px; font-size:14px;">📥 Excel</button>
+                        <div class="live-indicator"><div class="live-dot"></div> Canlı</div>
+                    </div>
                 </div>
                 
                 <div class="stats">
@@ -541,7 +546,15 @@
                     state.code = code;
                 } catch(e) {}
 
-                // Önce bu oturumda zaten yoklama alınmış mı kontrol et
+                // Önce localStorage'dan kontrol et (daha hızlı)
+                const localData = localStorage.getItem(`yoklama_taken_${session}`);
+                if (localData) {
+                    const data = JSON.parse(localData);
+                    showAlreadyTaken(data.name, data.no, data.time);
+                    return true;
+                }
+
+                // Firebase'den de kontrol et
                 checkAlreadyTaken(session);
                 
                 getLocation();
@@ -604,13 +617,13 @@
 
             new QRCode(document.getElementById('qrcode'), {
                 text: qrUrl, width: 256, height: 256,
-                colorDark: '#1a1a2e', colorLight: '#ffffff',
+                colorDark: '#2c3e50', colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.L
             });
 
             new QRCode(document.getElementById('qrcodeFull'), {
                 text: qrUrl, width: 350, height: 350,
-                colorDark: '#1a1a2e', colorLight: '#ffffff',
+                colorDark: '#2c3e50', colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.L
             });
 
@@ -814,6 +827,10 @@
 
                 showSuccess(name, no, Math.round(dist));
                 btn.textContent = '✓ Yoklama Alındı';
+
+                // YOKLAMA ALINDI - Formu gizle, tekrar girişi engelle
+                localStorage.setItem(`yoklama_taken_${sessionId}`, JSON.stringify({ name, no, time }));
+                showAlreadyTaken(name, no, time);
                 
             } catch (error) {
                 console.error('Hata:', error);
@@ -899,16 +916,48 @@
         function downloadList() {
             const ok = state.attendance.filter(a => a.status === 'ok');
             if (!ok.length) { showAlert('Kayıt yok!', 'warning'); return; }
-            
+
             const course = document.getElementById('courseName').value;
             const date = new Date().toLocaleDateString('tr-TR');
             let csv = '\ufeff' + `${course} - ${date}\n\nNo,Ad Soyad,Öğrenci No,Saat,Mesafe\n`;
             ok.forEach((a, i) => csv += `${i+1},"${a.name}",${a.no},${a.time},${a.dist}m\n`);
-            
+
             const link = document.createElement('a');
             link.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
             link.download = `yoklama_${date.replace(/\./g,'-')}.csv`;
             link.click();
+        }
+
+        function downloadExcel() {
+            const ok = state.attendance.filter(a => a.status === 'ok');
+            if (!ok.length) { showAlert('Kayıt yok!', 'warning'); return; }
+
+            const course = document.getElementById('courseName').value;
+            const now = new Date();
+            const exportDate = now.toLocaleDateString('tr-TR');
+            const exportTime = now.toLocaleTimeString('tr-TR');
+
+            // Excel uyumlu CSV oluştur (Tab separated for better Excel compatibility)
+            let csv = '\ufeff'; // BOM for UTF-8
+            csv += `YOKLAMA LİSTESİ\n`;
+            csv += `Ders: ${course}\n`;
+            csv += `Çıktı Tarihi: ${exportDate}\n`;
+            csv += `Çıktı Saati: ${exportTime}\n`;
+            csv += `Toplam Öğrenci: ${ok.length}\n`;
+            csv += `\n`;
+            csv += `Sıra,Ad Soyad,Öğrenci No,Yoklama Saati,Mesafe (m)\n`;
+
+            ok.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
+              .forEach((a, i) => {
+                csv += `${i+1},"${a.name}",${a.no},${a.time},${a.dist}\n`;
+            });
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
+            link.download = `yoklama_${course.replace(/\s+/g,'_')}_${exportDate.replace(/\./g,'-')}.csv`;
+            link.click();
+
+            showAlert('Excel dosyası indirildi!', 'success');
         }
     </script>
 </body>
