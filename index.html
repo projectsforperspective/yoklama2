@@ -1116,7 +1116,7 @@
                 row.height = 50;
                 row.getCell(4).alignment = { vertical: 'middle' };
                 if (a.signature) {
-                    const imgId = wb.addImage({ base64: a.signature.split(',')[1], extension: 'png' });
+                    const imgId = wb.addImage({ base64: a.signature, extension: 'png' });
                     ws.addImage(imgId, {
                         tl: { col: 3, row: i + 1 },
                         ext: { width: 200, height: 50 }
@@ -1196,7 +1196,7 @@
                 });
 
                 if (a.signature) {
-                    const imgId = wb.addImage({ base64: a.signature.split(',')[1], extension: 'png' });
+                    const imgId = wb.addImage({ base64: a.signature, extension: 'png' });
                     ws.addImage(imgId, {
                         tl: { col: 3, row: rowNum - 1 },
                         ext: { width: 200, height: 50 }
