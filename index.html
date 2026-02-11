@@ -237,6 +237,68 @@
         .already-taken h2 { color: #2ecc71; margin-bottom: 12px; font-size: 1.4rem; }
         .already-taken p { color: #95a5a6; }
 
+        .signature-section {
+            margin: 20px 0;
+            background: #2c3e50;
+            border: 1px solid #4a6278;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .signature-section label {
+            display: block;
+            margin-bottom: 10px;
+            color: #95a5a6;
+            font-size: 14px;
+        }
+        .signature-canvas-wrapper {
+            position: relative;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 6px;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .signature-canvas-wrapper canvas {
+            display: block;
+            width: 100%;
+            height: 180px;
+            cursor: crosshair;
+        }
+        .signature-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #bdc3c7;
+            font-size: 15px;
+            pointer-events: none;
+            text-align: center;
+        }
+        .signature-placeholder.hidden { display: none; }
+        .signature-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+        .signature-actions button {
+            padding: 6px 14px;
+            background: #4a6278;
+            border: 1px solid #5a7a96;
+            border-radius: 4px;
+            color: #ecf0f1;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .signature-actions button:hover { background: #5a7a96; }
+        .signature-thumb {
+            max-width: 80px;
+            max-height: 35px;
+            border: 1px solid #4a6278;
+            border-radius: 3px;
+            background: #fff;
+        }
+
         @media (max-width: 768px) {
             .container { padding: 10px; }
             .card { padding: 15px; }
@@ -245,6 +307,7 @@
             .fullscreen .timer { font-size: 3.5rem; }
             .fullscreen .code-display { font-size: 1.8rem; letter-spacing: 6px; }
             th, td { padding: 8px; font-size: 13px; }
+            .signature-canvas-wrapper canvas { height: 150px; }
         }
     </style>
 </head>
@@ -349,6 +412,17 @@
                         <input type="text" id="studentNo" placeholder="Öğrenci numaranız">
                     </div>
 
+                    <div class="signature-section">
+                        <label>✍️ İmza</label>
+                        <div class="signature-canvas-wrapper" id="signatureWrapper">
+                            <canvas id="signatureCanvas"></canvas>
+                            <div class="signature-placeholder" id="signaturePlaceholder">Parmaginizla imzanizi atin</div>
+                        </div>
+                        <div class="signature-actions">
+                            <button type="button" onclick="clearSignature()">Temizle</button>
+                        </div>
+                    </div>
+
                     <div class="status-box waiting" id="locationStatus">
                         <span style="font-size:28px;">📍</span>
                         <div>
@@ -403,7 +477,7 @@
                 <div style="overflow-x:auto;">
                     <table>
                         <thead>
-                            <tr><th>#</th><th>Ad Soyad</th><th>No</th><th>Saat</th><th>Mesafe</th><th>Durum</th></tr>
+                            <tr><th>#</th><th>Ad Soyad</th><th>No</th><th>Imza</th><th>Saat</th><th>Mesafe</th><th>Durum</th></tr>
                         </thead>
                         <tbody id="attendanceTable"></tbody>
                     </table>
@@ -470,6 +544,100 @@
             deviceId: null
         };
 
+        // ===== SIGNATURE PAD =====
+        let sigCanvas, sigCtx, sigDrawing = false, sigHasContent = false;
+
+        function initSignaturePad() {
+            sigCanvas = document.getElementById('signatureCanvas');
+            if (!sigCanvas) return;
+            sigCtx = sigCanvas.getContext('2d');
+            resizeSignatureCanvas();
+
+            // Mouse events
+            sigCanvas.addEventListener('mousedown', sigStart);
+            sigCanvas.addEventListener('mousemove', sigMove);
+            sigCanvas.addEventListener('mouseup', sigEnd);
+            sigCanvas.addEventListener('mouseleave', sigEnd);
+
+            // Touch events
+            sigCanvas.addEventListener('touchstart', sigTouchStart, { passive: false });
+            sigCanvas.addEventListener('touchmove', sigTouchMove, { passive: false });
+            sigCanvas.addEventListener('touchend', sigEnd);
+
+            window.addEventListener('resize', resizeSignatureCanvas);
+        }
+
+        function resizeSignatureCanvas() {
+            if (!sigCanvas) return;
+            const wrapper = document.getElementById('signatureWrapper');
+            const rect = wrapper.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            sigCanvas.width = rect.width * dpr;
+            sigCanvas.height = 180 * dpr;
+            sigCtx.scale(dpr, dpr);
+            sigCtx.strokeStyle = '#1a1a2e';
+            sigCtx.lineWidth = 2.5;
+            sigCtx.lineCap = 'round';
+            sigCtx.lineJoin = 'round';
+            sigHasContent = false;
+            document.getElementById('signaturePlaceholder').classList.remove('hidden');
+        }
+
+        function getCanvasPos(e) {
+            const rect = sigCanvas.getBoundingClientRect();
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function sigStart(e) {
+            sigDrawing = true;
+            const pos = getCanvasPos(e);
+            sigCtx.beginPath();
+            sigCtx.moveTo(pos.x, pos.y);
+            document.getElementById('signaturePlaceholder').classList.add('hidden');
+            sigHasContent = true;
+        }
+
+        function sigMove(e) {
+            if (!sigDrawing) return;
+            const pos = getCanvasPos(e);
+            sigCtx.lineTo(pos.x, pos.y);
+            sigCtx.stroke();
+        }
+
+        function sigEnd() {
+            sigDrawing = false;
+        }
+
+        function sigTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            sigStart({ clientX: touch.clientX, clientY: touch.clientY });
+        }
+
+        function sigTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            sigMove({ clientX: touch.clientX, clientY: touch.clientY });
+        }
+
+        function clearSignature() {
+            if (!sigCanvas) return;
+            sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+            sigHasContent = false;
+            document.getElementById('signaturePlaceholder').classList.remove('hidden');
+        }
+
+        function getSignatureData() {
+            if (!sigHasContent || !sigCanvas) return null;
+            // Create a temporary canvas to export at display size
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = sigCanvas.getBoundingClientRect().width;
+            tmpCanvas.height = 180;
+            const tmpCtx = tmpCanvas.getContext('2d');
+            tmpCtx.drawImage(sigCanvas, 0, 0, tmpCanvas.width, tmpCanvas.height);
+            return tmpCanvas.toDataURL('image/png');
+        }
+
         // ===== DEVICE ID - Kalıcı ve Benzersiz =====
         function getDeviceId() {
             let deviceId = localStorage.getItem('yoklama_device_id');
@@ -496,6 +664,9 @@
                     el.innerHTML = '❌ Firebase bağlantısı yok';
                 }
             });
+
+            // Signature pad'i başlat
+            initSignaturePad();
 
             // URL kontrolü (öğrenci mi?)
             if (checkURLParams()) return;
@@ -748,8 +919,11 @@
             const sessionId = document.getElementById('sessionId').value;
             const deviceId = getDeviceId();
 
+            const signatureData = getSignatureData();
+
             if (!name) { showAlert('Ad soyad girin!', 'error'); return; }
             if (!no) { showAlert('Öğrenci no girin!', 'error'); return; }
+            if (!signatureData) { showAlert('Imzanizi atin!', 'error'); return; }
             if (!state.location) { showAlert('Konum alınamadı!', 'error'); getLocation(); return; }
 
             // Butonu devre dışı bırak
@@ -818,7 +992,7 @@
                 }
 
                 // BAŞARILI - Kaydet
-                await saveRecord(sessionId, deviceId, name, no, 'ok', Math.round(dist), '');
+                await saveRecord(sessionId, deviceId, name, no, 'ok', Math.round(dist), '', signatureData);
                 
                 // Cihazı ve öğrenci nosunu kaydet (tekrar engellemek için)
                 const time = new Date().toLocaleTimeString('tr-TR');
@@ -840,12 +1014,14 @@
             }
         }
 
-        function saveRecord(sessionId, deviceId, name, no, status, dist, note) {
-            return db.ref(`sessions/${sessionId}/attendance`).push({
+        function saveRecord(sessionId, deviceId, name, no, status, dist, note, signature) {
+            const record = {
                 name, no, status, dist, note, deviceId,
                 time: new Date().toLocaleTimeString('tr-TR'),
                 timestamp: Date.now()
-            });
+            };
+            if (signature) record.signature = signature;
+            return db.ref(`sessions/${sessionId}/attendance`).push(record);
         }
 
         function calcDistance(lat1, lon1, lat2, lon2) {
@@ -871,6 +1047,7 @@
                     <td>${state.attendance.length - i}</td>
                     <td>${a.name}</td>
                     <td>${a.no}</td>
+                    <td>${a.signature ? '<img src="' + a.signature + '" class="signature-thumb" alt="imza">' : '-'}</td>
                     <td>${a.time}</td>
                     <td>${a.dist}m</td>
                     <td><span class="badge badge-${a.status === 'ok' ? 'success' : 'danger'}">
@@ -919,12 +1096,20 @@
 
             const course = document.getElementById('courseName').value;
             const date = new Date().toLocaleDateString('tr-TR');
-            let csv = '\ufeff' + `${course} - ${date}\n\nNo,Ad Soyad,Öğrenci No,Saat,Mesafe\n`;
-            ok.forEach((a, i) => csv += `${i+1},"${a.name}",${a.no},${a.time},${a.dist}m\n`);
+
+            let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<style>td,th{padding:5px 8px;border:1px solid #ccc;font-family:Calibri;font-size:11pt;vertical-align:middle;}th{background:#2c3e50;color:#fff;}img{max-width:200px;height:60px;}</style></head><body>
+<table><tr><th>No</th><th>Ad Soyad</th><th>Ogrenci No</th><th>Imza</th><th>Saat</th><th>Mesafe</th></tr>`;
+            ok.forEach((a, i) => {
+                const sigImg = a.signature ? `<img src="${a.signature}">` : '-';
+                html += `<tr><td>${i+1}</td><td>${a.name}</td><td>${a.no}</td><td>${sigImg}</td><td>${a.time}</td><td>${a.dist}m</td></tr>`;
+            });
+            html += '</table></body></html>';
 
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
-            link.download = `yoklama_${date.replace(/\./g,'-')}.csv`;
+            link.href = URL.createObjectURL(new Blob([html], {type: 'application/vnd.ms-excel;charset=utf-8'}));
+            link.download = `yoklama_${date.replace(/\./g,'-')}.xls`;
             link.click();
         }
 
@@ -937,24 +1122,39 @@
             const exportDate = now.toLocaleDateString('tr-TR');
             const exportTime = now.toLocaleTimeString('tr-TR');
 
-            // Excel uyumlu CSV oluştur (Tab separated for better Excel compatibility)
-            let csv = '\ufeff'; // BOM for UTF-8
-            csv += `YOKLAMA LİSTESİ\n`;
-            csv += `Ders: ${course}\n`;
-            csv += `Çıktı Tarihi: ${exportDate}\n`;
-            csv += `Çıktı Saati: ${exportTime}\n`;
-            csv += `Toplam Öğrenci: ${ok.length}\n`;
-            csv += `\n`;
-            csv += `Sıra,Ad Soyad,Öğrenci No,Yoklama Saati,Mesafe (m)\n`;
+            // HTML tabanlı Excel - imza görselleri dahil
+            let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>Yoklama</x:Name>
+<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+<style>
+  td, th { padding: 6px 10px; border: 1px solid #ccc; font-family: Calibri, sans-serif; font-size: 11pt; vertical-align: middle; }
+  th { background: #3498db; color: #fff; font-weight: bold; }
+  .header { font-size: 14pt; font-weight: bold; border: none; }
+  .meta { font-size: 10pt; color: #555; border: none; }
+  img { max-width: 200px; height: 60px; }
+</style></head><body>
+<table>
+  <tr><td class="header" colspan="6">YOKLAMA LISTESI</td></tr>
+  <tr><td class="meta" colspan="6">Ders: ${course}</td></tr>
+  <tr><td class="meta" colspan="6">Tarih: ${exportDate} - Saat: ${exportTime}</td></tr>
+  <tr><td class="meta" colspan="6">Toplam Ogrenci: ${ok.length}</td></tr>
+  <tr><td colspan="6"></td></tr>
+  <tr><th>Sira</th><th>Ad Soyad</th><th>Ogrenci No</th><th>Imza</th><th>Yoklama Saati</th><th>Mesafe (m)</th></tr>`;
 
             ok.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
               .forEach((a, i) => {
-                csv += `${i+1},"${a.name}",${a.no},${a.time},${a.dist}\n`;
+                const sigImg = a.signature ? `<img src="${a.signature}">` : '-';
+                html += `<tr><td>${i+1}</td><td>${a.name}</td><td>${a.no}</td><td>${sigImg}</td><td>${a.time}</td><td>${a.dist}</td></tr>`;
             });
 
+            html += '</table></body></html>';
+
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
-            link.download = `yoklama_${course.replace(/\s+/g,'_')}_${exportDate.replace(/\./g,'-')}.csv`;
+            link.href = URL.createObjectURL(new Blob([html], {type: 'application/vnd.ms-excel;charset=utf-8'}));
+            link.download = `yoklama_${course.replace(/\s+/g,'_')}_${exportDate.replace(/\./g,'-')}.xls`;
             link.click();
 
             showAlert('Excel dosyası indirildi!', 'success');
