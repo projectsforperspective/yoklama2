@@ -640,6 +640,15 @@
             return tmpCanvas.toDataURL('image/png');
         }
 
+        // base64 data URI'yi Uint8Array buffer'a cevir (Excel icin)
+        function dataURItoBuffer(dataURI) {
+            const b64 = dataURI.split(',')[1];
+            const bin = atob(b64);
+            const buf = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            return buf;
+        }
+
         // ===== DEVICE ID - Kalıcı ve Benzersiz =====
         function getDeviceId() {
             let deviceId = localStorage.getItem('yoklama_device_id');
@@ -719,7 +728,18 @@
                     state.code = code;
                 } catch(e) {}
 
-                // Önce localStorage'dan kontrol et (daha hızlı)
+                // Ders+konum bazli kontrol (ayni ders+konum icin tekrar yoklama engeli)
+                if (state.payload && state.payload.cn) {
+                    const courseKey = `yoklama_course_${state.payload.cn}_${state.payload.la}_${state.payload.lo}`;
+                    const courseData = localStorage.getItem(courseKey);
+                    if (courseData) {
+                        const d = JSON.parse(courseData);
+                        showAlreadyTaken(d.name, d.no, d.time);
+                        return true;
+                    }
+                }
+
+                // Session bazli kontrol (geriye uyumluluk)
                 const localData = localStorage.getItem(`yoklama_taken_${session}`);
                 if (localData) {
                     const data = JSON.parse(localData);
@@ -776,7 +796,8 @@
                 e: Date.now() + (refreshTime * 1000),
                 la: lat,
                 lo: lng,
-                to: tolerance
+                to: tolerance,
+                cn: document.getElementById('courseName').value
             };
 
             state.code = code;
@@ -1005,7 +1026,12 @@
                 btn.textContent = '✓ Yoklama Alındı';
 
                 // YOKLAMA ALINDI - Formu gizle, tekrar girişi engelle
-                localStorage.setItem(`yoklama_taken_${sessionId}`, JSON.stringify({ name, no, time }));
+                const takenData = JSON.stringify({ name, no, time });
+                localStorage.setItem(`yoklama_taken_${sessionId}`, takenData);
+                // Ders+konum bazli kilit (ayni ders+konum icin tekrar engeli)
+                if (payload.cn) {
+                    localStorage.setItem(`yoklama_course_${payload.cn}_${payload.la}_${payload.lo}`, takenData);
+                }
                 showAlreadyTaken(name, no, time);
                 
             } catch (error) {
@@ -1116,10 +1142,10 @@
                 row.height = 50;
                 row.getCell(4).alignment = { vertical: 'middle' };
                 if (a.signature) {
-                    const imgId = wb.addImage({ base64: a.signature, extension: 'png' });
+                    const imgId = wb.addImage({ buffer: dataURItoBuffer(a.signature), extension: 'png' });
                     ws.addImage(imgId, {
                         tl: { col: 3, row: i + 1 },
-                        ext: { width: 200, height: 50 }
+                        ext: { width: 200, height: 45 }
                     });
                 }
             });
@@ -1196,10 +1222,10 @@
                 });
 
                 if (a.signature) {
-                    const imgId = wb.addImage({ base64: a.signature, extension: 'png' });
+                    const imgId = wb.addImage({ buffer: dataURItoBuffer(a.signature), extension: 'png' });
                     ws.addImage(imgId, {
                         tl: { col: 3, row: rowNum - 1 },
-                        ext: { width: 200, height: 50 }
+                        ext: { width: 200, height: 45 }
                     });
                 }
             });
