@@ -341,13 +341,11 @@
                     </div>
                     <div class="form-group">
                         <label>📍 Konum</label>
-                        <select id="classroom">
-                            <option value="40.2234,28.8721">Amfi A - Ana Bina</option>
-                            <option value="40.2230,28.8725">Amfi B - Tıp Fakültesi</option>
-                            <option value="40.2228,28.8719">Sınıf 101</option>
-                            <option value="40.2232,28.8723">Farmakoloji Lab</option>
-                            <option value="custom">📍 Özel Konum</option>
-                        </select>
+                        <div id="adminLocationStatus" style="padding:8px 12px; border-radius:8px; background:#fff3cd; color:#856404; font-size:13px;">
+                            ⏳ Konum alınıyor...
+                        </div>
+                        <input type="hidden" id="adminLat" value="">
+                        <input type="hidden" id="adminLng" value="">
                     </div>
                     <div class="form-group">
                         <label>⏱️ Yenileme (sn)</label>
@@ -355,23 +353,10 @@
                     </div>
                     <div class="form-group">
                         <label>📏 Tolerans (m)</label>
-                        <input type="number" id="tolerance" value="50" min="20" max="200">
+                        <input type="number" id="tolerance" value="100" min="20" max="1000">
                     </div>
                 </div>
 
-                <div id="customLocationDiv" style="display:none;" class="form-row">
-                    <div class="form-group">
-                        <label>Enlem</label>
-                        <input type="text" id="customLat" placeholder="40.2234">
-                    </div>
-                    <div class="form-group">
-                        <label>Boylam</label>
-                        <input type="text" id="customLng" placeholder="28.8721">
-                    </div>
-                    <div class="form-group" style="display:flex; align-items:flex-end;">
-                        <button class="btn btn-primary" onclick="useMyLocation()">📍 Konumumu Kullan</button>
-                    </div>
-                </div>
 
                 <div class="qr-section">
                     <div class="qr-box"><div id="qrcode"></div></div>
@@ -692,9 +677,8 @@
                 };
             });
 
-            document.getElementById('classroom').onchange = function() {
-                document.getElementById('customLocationDiv').style.display = this.value === 'custom' ? 'grid' : 'none';
-            };
+            // Sayfa açılınca admin konumunu otomatik al
+            fetchAdminLocation();
 
             document.addEventListener('keydown', e => {
                 if (e.key === 'Escape') {
@@ -782,13 +766,11 @@
             const refreshTime = parseInt(document.getElementById('refreshTime').value) || 60;
             const tolerance = parseInt(document.getElementById('tolerance').value) || 50;
             
-            let lat, lng;
-            const classroom = document.getElementById('classroom').value;
-            if (classroom === 'custom') {
-                lat = parseFloat(document.getElementById('customLat').value) || 0;
-                lng = parseFloat(document.getElementById('customLng').value) || 0;
-            } else {
-                [lat, lng] = classroom.split(',').map(Number);
+            let lat = parseFloat(document.getElementById('adminLat').value);
+            let lng = parseFloat(document.getElementById('adminLng').value);
+            if (!lat || !lng) {
+                showAlert('Konum henüz alınamadı! Lütfen konum iznini verin ve bekleyin.', 'error');
+                return;
             }
 
             const payload = {
@@ -922,15 +904,28 @@
             );
         }
 
-        function useMyLocation() {
-            navigator.geolocation?.getCurrentPosition(
+        function fetchAdminLocation() {
+            const statusEl = document.getElementById('adminLocationStatus');
+            if (!navigator.geolocation) {
+                statusEl.style.background = '#f8d7da';
+                statusEl.style.color = '#721c24';
+                statusEl.textContent = '❌ Tarayıcı konum desteklemiyor';
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
                 pos => {
-                    document.getElementById('customLat').value = pos.coords.latitude.toFixed(6);
-                    document.getElementById('customLng').value = pos.coords.longitude.toFixed(6);
-                    showAlert('Konum kaydedildi!', 'success');
+                    document.getElementById('adminLat').value = pos.coords.latitude.toFixed(6);
+                    document.getElementById('adminLng').value = pos.coords.longitude.toFixed(6);
+                    statusEl.style.background = '#d4edda';
+                    statusEl.style.color = '#155724';
+                    statusEl.textContent = `✓ Konum alındı (±${Math.round(pos.coords.accuracy)}m)`;
                 },
-                () => showAlert('Konum alınamadı!', 'error'),
-                { enableHighAccuracy: true }
+                err => {
+                    statusEl.style.background = '#f8d7da';
+                    statusEl.style.color = '#721c24';
+                    statusEl.textContent = '❌ Konum alınamadı! İzin verin ve sayfayı yenileyin.';
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
 
