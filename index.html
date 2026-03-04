@@ -314,13 +314,26 @@
 <body>
     <div class="container">
         <nav class="nav" id="mainNav">
-            <button class="nav-btn active" data-panel="admin">🖥️ Yönetici</button>
+            <button class="nav-btn active" data-panel="adminLogin" id="navAdminBtn">🔐 Yönetici</button>
             <button class="nav-btn" data-panel="student">📱 Öğrenci</button>
-            <button class="nav-btn" data-panel="list">📋 Liste</button>
+            <button class="nav-btn" data-panel="list" id="navListBtn" style="display:none;">📋 Liste</button>
         </nav>
 
+        <!-- Admin Giriş Ekranı -->
+        <div id="adminLogin" class="panel active">
+            <div class="card" style="max-width:400px; margin:40px auto; text-align:center;">
+                <h2 style="margin-bottom:20px;">🔐 Yönetici Girişi</h2>
+                <p style="color:#888; margin-bottom:20px;">Admin paneline erişmek için şifre girin</p>
+                <div class="form-group">
+                    <input type="password" id="adminPassword" placeholder="Şifre" onkeydown="if(event.key==='Enter') adminLogin()">
+                </div>
+                <button class="btn btn-primary" onclick="adminLogin()" style="width:100%;">Giriş Yap</button>
+                <p id="loginError" style="color:#e74c3c; margin-top:10px; display:none;">Yanlış şifre!</p>
+            </div>
+        </div>
+
         <!-- Admin Panel -->
-        <div id="admin" class="panel active">
+        <div id="admin" class="panel">
             <div class="card">
                 <h1>🎓 QR Yoklama Sistemi</h1>
                 
@@ -645,6 +658,23 @@
             return deviceId;
         }
 
+        // ===== ADMIN LOGIN =====
+        const ADMIN_PIN = '1234';
+
+        function adminLogin() {
+            const pw = document.getElementById('adminPassword').value;
+            if (pw === ADMIN_PIN) {
+                document.getElementById('adminLogin').classList.remove('active');
+                document.getElementById('admin').classList.add('active');
+                document.getElementById('navAdminBtn').dataset.panel = 'admin';
+                document.getElementById('navListBtn').style.display = '';
+                document.getElementById('loginError').style.display = 'none';
+                fetchAdminLocation();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
         // ===== INIT =====
         document.addEventListener('DOMContentLoaded', () => {
             state.deviceId = getDeviceId();
@@ -676,9 +706,6 @@
                     document.getElementById(btn.dataset.panel).classList.add('active');
                 };
             });
-
-            // Sayfa açılınca admin konumunu otomatik al
-            fetchAdminLocation();
 
             document.addEventListener('keydown', e => {
                 if (e.key === 'Escape') {
